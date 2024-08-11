@@ -1,0 +1,14 @@
+services:
+  kong-database:
+    image: postgres:12-alpine
+    restart: always
+    shm_size: 128mb
+    environment:
+      POSTGRES_USER: kong
+      POSTGRES_DB: kong
+      POSTGRES_PASSWORD: kong
+    volumes:
+      - ./kong-database:/var/lib/postgresql/data
+      - ./db-init/init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "5432:5432"
