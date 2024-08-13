@@ -14,7 +14,7 @@ services:
       - "5432:5432"
     container_name: kong-database
     networks:
-      - default
+      - kong-demo-support_default
 
   kong-api:
     build: 
@@ -38,11 +38,11 @@ services:
       
     container_name: kong-apis-portal
     networks:
-      - default
+      - kong-demo-support_default
+      
 
 
 networks:
-  default:
-    external:
-      name: kong-demo-support_default
+  kong-demo-support_default:
+    driver: bridge
   
