@@ -1,7 +1,7 @@
 import { DataSource } from 'typeorm';
-import { Service } from './service.entity';
+import { Service } from './services.entity';
 import { DATA_SOURCE } from 'src/database/database.constants';
-import { SERVICE_REPOSITORY } from './service.constants';
+import { SERVICE_REPOSITORY } from './services.constants';
 
 export const serviceProviders = [
   {
