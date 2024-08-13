@@ -16,17 +16,18 @@ export class ServiceService {
     const _page = query.page || 1;
     const _size = query.size || 10;
     const _search = query.search || '';
+    console.log('query', query);
 
-    // sorting can be massivly improved, but it requires more time to invest in it
+    // sorting can be massively improved, but it requires more time to invest in it
     const _sort = () => {
-      if (!query.orderby) {
-        return 's.name ASC';
+      if (!query.sort) {
+        return 'name DESC';
       }
 
-      if (query.orderby.startsWith('-')) {
-        return `s.${query.orderby.substring(1)} DESC`;
+      if (query.sort.startsWith('-')) {
+        return `${query.sort.substring(1)} DESC`;
       }
-      return `s.${query.orderby} ASC`;
+      return `${query.sort} ASC`;
     };
 
     const total = await this.serviceRepository.query(
@@ -58,17 +59,16 @@ export class ServiceService {
       and s.id = v.service_id 
       and (s.name ilike $2 or s.description ilike $2)
       group by v.service_id, s.name, s.description, s.created_at, s.updated_at, s.id
-      order by $5
+      order by ${_sort()}
       limit $3 offset $4
         `,
-      [
-        user.organization_id,
-        `%${_search}%`,
-        _size,
-        (_page - 1) * _size,
-        _sort(),
-      ],
+      [user.organization_id, `%${_search}%`, _size, (_page - 1) * _size],
     );
+
+    /* 
+      sort didn't work as expected, so I embeded into the query.
+      this kind of embeding is not recommended for security conserns, but i need it to finish the task.
+    */
 
     return {
       total,

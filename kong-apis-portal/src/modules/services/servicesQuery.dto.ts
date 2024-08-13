@@ -29,10 +29,10 @@ export class QueryDto {
   @IsAlphanumeric()
   search: string | null;
 
-  @ValidateIf((o) => o.orderby)
+  @ValidateIf((o) => o.sort)
   @Matches(/^(-)?[a-z0-9_]*$/i, {
     message:
-      'OrderBy must be alphanumeric with underscore, and can have a - (dash) prefix: Example -name or name.',
+      'Sort must be alphanumeric with underscore, and can have a - (dash) prefix: Example -name or name.',
   })
-  orderby: string | null;
+  sort: string | null;
 }
