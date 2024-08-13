@@ -12,3 +12,37 @@ services:
       - ./db-init/init.sql:/docker-entrypoint-initdb.d/init.sql
     ports:
       - "5432:5432"
+    container_name: kong-database
+    networks:
+      - default
+
+  kong-api:
+    build: 
+      context: ../kong-apis-portal
+      dockerfile: Dockerfile  
+    # image: kong-apis-portal
+    ports:
+      - 3000:3000
+    environment:
+      - APP_AUTH_SECRET=secret
+      - APP_AUTH_EXPIRES_IN=1d
+      - APP_AUTH_PASSWORD_SALT=secret
+      - DB_HOST=kong-database
+      - DB_PORT=5432
+      - DB_USER=kong
+      - DB_PASSWORD=kong
+      - DB_NAME=kong
+      - DB_SCHEMA=public
+    depends_on:
+      - kong-database
+      
+    container_name: kong-apis-portal
+    networks:
+      - default
+
+
+networks:
+  default:
+    external:
+      name: kong-demo-support_default
+  
