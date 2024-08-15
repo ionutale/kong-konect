@@ -47,7 +47,7 @@ organizationId = :organizationId AND (name ILIKE :search OR description ILIKE :d
 ```
 That encapsulated `OR` i was not able to do it with the `.find()` or `.createQueryBuilder()` methods, so i have used the `.query()` method.
 Also a strange behavior i have encountered with `.query()` when using the `ORDER BY` with paramenters, it did not work, so in the end i have just embeded into the query string.
-All the querys are parametrized, but i am not sure if they are safe from SQL injection, i have not tested that.
+All the querys are parametrized, but i am not sure if they are safe from SQL injection.
 I did used the Validation as the documentation suggested, but since the paramiters for LIKE/ILIKE require me to insert special characters, directly into the parameters, i am not sure how much i can trust it.
 Better sanitization and validations should be done, in a real world scenario.
 
