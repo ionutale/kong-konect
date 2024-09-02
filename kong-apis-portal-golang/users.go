@@ -48,7 +48,7 @@ func handlerUserLogin(c *fiber.Ctx) error {
 
 	token := loginUser(id, auth.Password)
 
-	return c.JSON(fiber.Map{"token": token})
+	return c.JSON(fiber.Map{"access_token": token})
 }
 
 func handlerUserSetPassword(c *fiber.Ctx) error {
