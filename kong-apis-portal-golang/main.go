@@ -1,8 +1,9 @@
 package main
 
 import (
+	"log"
 	"strconv"
-
+	"fmt"
 	"github.com/gofiber/fiber/v2"
 )
 
@@ -13,18 +14,24 @@ func main() {
 		return c.SendString("Hello, World")
 	})
 
-	api := app.Group("/api")                                                // /api
-	v1 := api.Group("/v1")                                                  // /api/v1
-	v1.Get("/organizations", handler_organizations)                         // /api/v1/organizations
-	v1.Get("/services", handler_services)                                   // /api/v1/services
-	v1.Get("/services/:id", handler_serviceById)                            // /api/v1/services/:id
-	v1.Get("/services/:id/versions/:versionId", handler_serviceVersionById) // /api/v1/services/:id/versions/:versionId
+	api := app.Group("/api")                        // /api
+	v1 := api.Group("/v1")                          // /api/v1
+	v1.Get("/organizations", handler_organizations) // /api/v1/organizations
+	services := v1.Group("/services", servicesMiddleware) // /api/v1
+
+	services.Get("/", handler_services)                                  // /api/v1/services
+	services.Get("/:id", handler_serviceById)                            // /api/v1/services/:id
+	services.Get("/:id/versions/:versionId", handler_serviceVersionById) // /api/v1/services/:id/versions/:versionId
 
 	v1.Get("/users", handler_users)                        // /api/v1/user
 	v1.Post("/users/:id/login", handlerUserLogin)          // /api/v1/user/:id/login
 	v1.Post("/users/:id/password", handlerUserSetPassword) // /api/v1/user/:id/set-password
 
-	app.Listen(":3000")
+	
+	err := app.Listen(":3000")
+	if err != nil {
+		log.Fatal(err)
+	}
 }
 
 func handler_organizations(c *fiber.Ctx) error {
@@ -32,6 +39,15 @@ func handler_organizations(c *fiber.Ctx) error {
 }
 
 // services
+func servicesMiddleware(c *fiber.Ctx) error {
+	// middleware
+	jwt := c.Get("Authorization")
+
+	fmt.Println("middleware JWT", jwt)
+
+	return c.Next()
+}
+
 func handler_services(c *fiber.Ctx) error {
 	page, err := strconv.Atoi(c.Query("page", "1"))
 	if err != nil {
@@ -43,8 +59,8 @@ func handler_services(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid size"})
 	}
 
-	search := c.Query("search", "")
-	sort := c.Query("sort", "name")
+	search := c.Query("search", "%")
+	sort := c.Query("orderby", "-name")
 
 	return c.JSON(fetchServices(page, size, search, sort))
 }
