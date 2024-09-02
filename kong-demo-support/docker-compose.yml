@@ -3,6 +3,11 @@ services:
     image: postgres:12-alpine
     restart: always
     shm_size: 128mb
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
     environment:
       POSTGRES_USER: kong
       POSTGRES_DB: kong
@@ -23,6 +28,11 @@ services:
     # image: kong-apis-portal
     ports:
       - 3000:3000
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
     environment:
       - APP_AUTH_SECRET=secret
       - APP_AUTH_EXPIRES_IN=1d
@@ -37,6 +47,34 @@ services:
       - kong-database
       
     container_name: kong-apis-portal
+    networks:
+      - kong-network
+
+  kong-api-golang:
+    build: 
+      context: ../kong-apis-portal-golang
+      dockerfile: Dockerfile  
+    # image: kong-apis-golang
+    ports:
+      - 3001:3000
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+    environment:
+      - APP_AUTH_SECRET=secret
+      - APP_AUTH_EXPIRES_IN=1d
+      - APP_AUTH_PASSWORD_SALT=secret
+      - DB_HOST=kong-database
+      - DB_PORT=5432
+      - DB_USER=kong
+      - DB_PASSWORD=kong
+      - DB_NAME=kong
+      - DB_SCHEMA=public
+    depends_on:
+      - kong-database
+    container_name: kong-apis-golang
     networks:
       - kong-network
       
