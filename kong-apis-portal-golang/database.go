@@ -17,8 +17,13 @@ type GenericResponse struct {
 	Data  interface{}
 }
 
+type ServiceWithVersions struct {
+	Service Service
+	Version []Version
+}
+
 type Organization struct {
-	ID          string    `json:"id"`
+	ID          string `json:"id"`
 	Name        string `json:"name"`
 	Description string `json:"description"`
 	CreatedAt   string `json:"created_at"`
@@ -32,11 +37,13 @@ type Service struct {
 	CreatedAt      string `json:"created_at"`
 	UpdateAt       string `json:"update_at"`
 	VersionsCount  int    `json:"versionsCount"`
+
+	Versions []Version `json:"versions,omitempty"` // Optional field for versions
 }
 
-type Versions struct {
-	ID          string    `json:"id"`
-	ServiceID   string    `json:"service_id"`
+type Version struct {
+	ID          string `json:"id"`
+	ServiceID   string `json:"service_id"`
 	Version     string `json:"version"`
 	Name        string `json:"name"`
 	Description string `json:"description"`
@@ -54,7 +61,6 @@ func dbConnect() *sql.DB {
 
 	return db
 }
-
 
 func fetchOrganizations() []Organization {
 	rows, err := db.Query("SELECT name FROM organizations")
@@ -80,7 +86,7 @@ func fetchOrganizations() []Organization {
 /**
  * Fetch services
  */
-func fetchServices(page int, size int, search string, sort string) GenericResponse {
+func fetchServices(organization_id string, page int, size int, search string, sort string) GenericResponse {
 
 	// check if sort starts with - or + and remove it
 	if strings.HasPrefix(sort, "-") {
@@ -95,8 +101,8 @@ func fetchServices(page int, size int, search string, sort string) GenericRespon
 
 	fmt.Println(sort)
 
-	totalRows, err := db.Query("SELECT count(*) from (SELECT s.id as id, s.organization_id as organization_id, s.name as name, s.description as description, s.created_at as created_at, s.updated_at as updated_at FROM services s, versions v WHERE s.id = v.service_id AND (s.name LIKE $1 OR s.description LIKE $1) GROUP BY v.service_id, s.name, s.description, s.created_at, s.updated_at, s.id) AS subquery",
-		search)
+	totalRows, err := db.Query("SELECT count(*) from (SELECT s.id as id, s.organization_id as organization_id, s.name as name, s.description as description, s.created_at as created_at, s.updated_at as updated_at FROM services s, versions v WHERE s.organization_id = $1 AND s.id = v.service_id AND (s.name LIKE $2 OR s.description LIKE $2) GROUP BY v.service_id, s.name, s.description, s.created_at, s.updated_at, s.id) AS subquery",
+		organization_id, search)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -110,8 +116,8 @@ func fetchServices(page int, size int, search string, sort string) GenericRespon
 		}
 	}
 
-	rows, err := db.Query("SELECT s.id as id, s.organization_id as organization_id, s.name as name, s.description as description, s.created_at as created_at, s.updated_at as updated_at, count(v.id) as versionsCount FROM services s, versions v WHERE s.id = v.service_id AND (s.name LIKE $1 OR s.description LIKE $2) GROUP BY v.service_id, s.name, s.description, s.created_at, s.updated_at, s.id ORDER BY $3 LIMIT $4 OFFSET $5",
-		search, search, sort, size, (page-1)*size)
+	rows, err := db.Query("SELECT s.id as id, s.organization_id as organization_id, s.name as name, s.description as description, s.created_at as created_at, s.updated_at as updated_at, count(v.id) as versionsCount FROM services s, versions v WHERE s.organization_id = $1 AND s.id = v.service_id AND (s.name LIKE $2 OR s.description LIKE $3) GROUP BY v.service_id, s.name, s.description, s.created_at, s.updated_at, s.id ORDER BY $4 LIMIT $5 OFFSET $6",
+		organization_id, search, search, sort, size, (page-1)*size)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -132,43 +138,76 @@ func fetchServices(page int, size int, search string, sort string) GenericRespon
 /**
  * Fetch a service by id
  */
-func fetchServiceById(id int) Service {
-	rows, err := db.Query("SELECT name FROM services WHERE id = $1", id)
+func fetchServiceById(organization_id string, id string) Service {
+	rows, err := db.Query("SELECT s.id as id, s.organization_id as organization_id, s.name as name, s.description as description, s.created_at as created_at, s.updated_at as updated_at, v.id as versionId, v.version FROM services s LEFT JOIN versions v ON s.id = v.service_id WHERE s.organization_id = $1 AND s.id = $2", organization_id, id)
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer rows.Close()
 
 	var service Service
-
+	var versions []Version
 	for rows.Next() {
-		if err := rows.Scan(&service.Name); err != nil {
+		var version Version
+		if err := rows.Scan(
+			&service.ID,
+			&service.OrganizationID,
+			&service.Name,
+			&service.Description,
+			&service.CreatedAt,
+			&service.UpdateAt,
+			&version.ID,
+			&version.Version,
+		); err != nil {
 			log.Fatal(err)
 		}
+		versions = append(versions, version)
 	}
 
-	fmt.Println(service)
+	if err := rows.Err(); err != nil {
+		log.Fatal(err)
+	}
+
+	service.Versions = versions
+
 	return service
 }
 
 /**
  * Fetch a service version by id
  */
-func fetchServiceVersionById(serviceId int, versionId int) Versions {
-	rows, err := db.Query("SELECT name FROM versions WHERE service_id = $1 AND id = $2", serviceId, versionId)
+func fetchServiceVersionById(organization_id string, serviceId string, versionId string) Service {
+	rows, err := db.Query("SELECT s.id as id, s.organization_id as organization_id, s.name as name, s.description as description, s.created_at as created_at, s.updated_at as updated_at, v.id as versionId, v.version, v.name, v.description, v.created_at FROM services s LEFT JOIN versions v ON s.id = v.service_id WHERE s.organization_id = $1 AND s.id = $2 and v.id = $3",
+		organization_id,
+		serviceId,
+		versionId)
+
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer rows.Close()
 
-	var version Versions
-
+	var service Service
+	var version Version
 	for rows.Next() {
-		if err := rows.Scan(&version.Name); err != nil {
+		if err := rows.Scan(
+			&service.ID,
+			&service.OrganizationID,
+			&service.Name,
+			&service.Description,
+			&service.CreatedAt,
+			&service.UpdateAt,
+			&version.ID,
+			&version.Version,
+			&version.Name,
+			&version.Description,
+			&version.CreatedAt,
+		); err != nil {
 			log.Fatal(err)
 		}
 	}
 
-	fmt.Println(version)
-	return version
+	service.Versions = append(service.Versions, version)
+
+	return service
 }

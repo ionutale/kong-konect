@@ -9,9 +9,12 @@ import (
 // services
 func servicesMiddleware(c *fiber.Ctx) error {
 	// middleware
-	jwt := c.Get("Authorization")
+	authorization := c.Get("Authorization")
+	jwt := authorization[7:]
+	organization_id := decodeToken(jwt)
+	fmt.Println("middleware JWT", organization_id)
 
-	fmt.Println("middleware JWT", jwt)
+	c.Locals("organization_id", organization_id)
 
 	return c.Next()
 }

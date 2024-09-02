@@ -38,6 +38,9 @@ func handler_organizations(c *fiber.Ctx) error {
 
 func handler_services(c *fiber.Ctx) error {
 	page, err := strconv.Atoi(c.Query("page", "1"))
+
+	organization_id := c.Locals("organization_id").(string)
+
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid page"})
 	}
@@ -50,13 +53,20 @@ func handler_services(c *fiber.Ctx) error {
 	search := c.Query("search", "%")
 	sort := c.Query("orderby", "-name")
 
-	return c.JSON(fetchServices(page, size, search, sort))
+	return c.JSON(fetchServices(organization_id, page, size, search, sort))
 }
 
 func handler_serviceById(c *fiber.Ctx) error {
-	return c.SendString("Service by Id")
+	organization_id := c.Locals("organization_id").(string)
+	id := c.Params("id")
+
+	return c.JSON(fetchServiceById(organization_id, id))
 }
 
 func handler_serviceVersionById(c *fiber.Ctx) error {
-	return c.SendString("Service version by Id")
+	organization_id := c.Locals("organization_id").(string)
+	serviceId := c.Params("id")
+	versionId := c.Params("versionId")
+
+	return c.JSON(fetchServiceVersionById(organization_id, serviceId, versionId))
 }

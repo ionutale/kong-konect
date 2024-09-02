@@ -41,7 +41,6 @@ func handlerUserLogin(c *fiber.Ctx) error {
 		return c.Status(400).JSON(fiber.Map{"error": err.Error()})
 	}
 
-
 	if auth.ID != id {
 		return c.Status(400).JSON(fiber.Map{"error": "Invalid user"})
 	}
@@ -149,18 +148,7 @@ func loginUser(id string, password string) string {
 		log.Fatal("Invalid password")
 	}
 
-	// generate token
-	token := jwt.New(jwt.SigningMethodHS256)
-	claims := token.Claims.(jwt.MapClaims)
-	claims["username"] = user.Email
-	claims["organization_id"] = user.OrganizationID
-
-	tokenString, err := token.SignedString([]byte("secret"))
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	return tokenString
+	return generateToken(user)
 }
 
 /**
@@ -177,4 +165,37 @@ func CheckPasswordHash(password, hash string) bool {
 		log.Println(err)
 	}
 	return err == nil
+}
+
+/**
+ * Generate token
+ */
+
+func generateToken(user User) string {
+	// generate token
+	token := jwt.New(jwt.SigningMethodHS256)
+	claims := token.Claims.(jwt.MapClaims)
+	claims["username"] = user.Email
+	claims["organization_id"] = user.OrganizationID
+
+	tokenString, err := token.SignedString([]byte("secret"))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return tokenString
+}
+
+func decodeToken(tokenString string) string {
+	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+		return []byte("secret"), nil
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	claims := token.Claims.(jwt.MapClaims)
+	log.Println(claims["username"], claims["organization_id"])
+
+	return claims["organization_id"].(string)
 }
