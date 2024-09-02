@@ -17,16 +17,8 @@ type GenericResponse struct {
 	Data  interface{}
 }
 
-type User struct {
-	ID             int    `json:"id"`
-	Name           string `json:"name"`
-	Email          string `json:"email"`
-	OrganizationID int    `json:"organization_id"`
-	CreatedAt      string `json:"created_at"`
-}
-
 type Organization struct {
-	ID          int    `json:"id"`
+	ID          string    `json:"id"`
 	Name        string `json:"name"`
 	Description string `json:"description"`
 	CreatedAt   string `json:"created_at"`
@@ -43,8 +35,8 @@ type Service struct {
 }
 
 type Versions struct {
-	ID          int    `json:"id"`
-	ServiceID   int    `json:"service_id"`
+	ID          string    `json:"id"`
+	ServiceID   string    `json:"service_id"`
 	Version     string `json:"version"`
 	Name        string `json:"name"`
 	Description string `json:"description"`
@@ -63,27 +55,6 @@ func dbConnect() *sql.DB {
 	return db
 }
 
-func fetchUsers() []User {
-
-	rows, err := db.Query("SELECT name FROM users")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer rows.Close()
-
-	var users []User
-	for rows.Next() {
-		var user User
-		if err := rows.Scan(&user.Name); err != nil {
-			log.Fatal(err)
-		}
-		users = append(users, user)
-	}
-
-	fmt.Println(users)
-
-	return users
-}
 
 func fetchOrganizations() []Organization {
 	rows, err := db.Query("SELECT name FROM organizations")
@@ -106,7 +77,9 @@ func fetchOrganizations() []Organization {
 	return organizations
 }
 
-// services
+/**
+ * Fetch services
+ */
 func fetchServices(page int, size int, search string, sort string) GenericResponse {
 
 	// check if sort starts with - or + and remove it
@@ -156,6 +129,9 @@ func fetchServices(page int, size int, search string, sort string) GenericRespon
 	return GenericResponse{Total: total, Data: services}
 }
 
+/**
+ * Fetch a service by id
+ */
 func fetchServiceById(id int) Service {
 	rows, err := db.Query("SELECT name FROM services WHERE id = $1", id)
 	if err != nil {
@@ -175,6 +151,9 @@ func fetchServiceById(id int) Service {
 	return service
 }
 
+/**
+ * Fetch a service version by id
+ */
 func fetchServiceVersionById(serviceId int, versionId int) Versions {
 	rows, err := db.Query("SELECT name FROM versions WHERE service_id = $1 AND id = $2", serviceId, versionId)
 	if err != nil {

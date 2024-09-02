@@ -1,10 +1,9 @@
 package main
 
 import (
+	"github.com/gofiber/fiber/v2"
 	"log"
 	"strconv"
-	"fmt"
-	"github.com/gofiber/fiber/v2"
 )
 
 func main() {
@@ -14,9 +13,9 @@ func main() {
 		return c.SendString("Hello, World")
 	})
 
-	api := app.Group("/api")                        // /api
-	v1 := api.Group("/v1")                          // /api/v1
-	v1.Get("/organizations", handler_organizations) // /api/v1/organizations
+	api := app.Group("/api")                              // /api
+	v1 := api.Group("/v1")                                // /api/v1
+	v1.Get("/organizations", handler_organizations)       // /api/v1/organizations
 	services := v1.Group("/services", servicesMiddleware) // /api/v1
 
 	services.Get("/", handler_services)                                  // /api/v1/services
@@ -27,7 +26,6 @@ func main() {
 	v1.Post("/users/:id/login", handlerUserLogin)          // /api/v1/user/:id/login
 	v1.Post("/users/:id/password", handlerUserSetPassword) // /api/v1/user/:id/set-password
 
-	
 	err := app.Listen(":3000")
 	if err != nil {
 		log.Fatal(err)
@@ -36,16 +34,6 @@ func main() {
 
 func handler_organizations(c *fiber.Ctx) error {
 	return c.JSON(fetchOrganizations())
-}
-
-// services
-func servicesMiddleware(c *fiber.Ctx) error {
-	// middleware
-	jwt := c.Get("Authorization")
-
-	fmt.Println("middleware JWT", jwt)
-
-	return c.Next()
 }
 
 func handler_services(c *fiber.Ctx) error {
@@ -71,18 +59,4 @@ func handler_serviceById(c *fiber.Ctx) error {
 
 func handler_serviceVersionById(c *fiber.Ctx) error {
 	return c.SendString("Service version by Id")
-}
-
-// users
-func handler_users(c *fiber.Ctx) error {
-
-	return c.SendString("List of users")
-}
-
-func handlerUserLogin(c *fiber.Ctx) error {
-	return c.SendString("User login")
-}
-
-func handlerUserSetPassword(c *fiber.Ctx) error {
-	return c.SendString("User set password")
 }
