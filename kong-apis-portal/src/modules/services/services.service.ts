@@ -76,8 +76,6 @@ export class ServiceService {
     };
   }
 
-  const random = Math.floor(Math.random() * 1000000);
-
   async findById(id: string, user: User): Promise<Service> {
     return this.serviceRepository
       .createQueryBuilder('services')
