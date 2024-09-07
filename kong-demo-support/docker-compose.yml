@@ -6,8 +6,8 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '0.5'
-          memory: 512M
+          cpus: "2"
+          memory: 2G
     environment:
       POSTGRES_USER: kong
       POSTGRES_DB: kong
@@ -22,17 +22,17 @@ services:
       - kong-network
 
   kong-api:
-    build: 
+    build:
       context: ../kong-apis-portal
-      dockerfile: Dockerfile  
+      dockerfile: Dockerfile
     # image: kong-apis-portal
     ports:
       - 3000:3000
     deploy:
       resources:
         limits:
-          cpus: '0.5'
-          memory: 512M
+          cpus: "2"
+          memory: 2G
     environment:
       - APP_AUTH_SECRET=secret
       - APP_AUTH_EXPIRES_IN=1d
@@ -45,22 +45,22 @@ services:
       - DB_SCHEMA=public
     depends_on:
       - kong-database
-      
+
     container_name: kong-apis-portal
     networks:
       - kong-network
 
   kong-api-golang:
-    build: 
+    build:
       context: ../kong-apis-portal-golang
-      dockerfile: Dockerfile  
+      dockerfile: Dockerfile
     # image: kong-apis-golang
     ports:
-      - 3001:3000
+      - 3001:3001
     deploy:
       resources:
         limits:
-          cpus: '0.5'
+          cpus: "2"
           memory: 512M
     environment:
       - APP_AUTH_SECRET=secret
@@ -77,12 +77,9 @@ services:
     container_name: kong-apis-golang
     networks:
       - kong-network
-      
-
 
 networks:
   kong-network:
     external: true
     driver: overlay
     name: kong-network
-  
