@@ -1,10 +1,11 @@
 package main
 
 import (
+	"log"
+
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/crypto/bcrypt"
-	"log"
 )
 
 const ROUNDS = 10
@@ -115,7 +116,7 @@ func setUserPassword(id string, password string) {
 	}
 
 	// update password
-	_, err := db.Exec("UPDATE users SET password = $1 WHERE id = $2", hash, id)
+	_, err := db.Exec(`UPDATE users SET password = $1 WHERE id = $2`, hash, id)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -142,7 +143,6 @@ func loginUser(id string, password string) string {
 		auth.ID = user.ID
 	}
 
-	log.Println(user, password)
 	// check password
 	if !CheckPasswordHash(password, auth.Password) {
 		log.Fatal("Invalid password")
@@ -162,7 +162,7 @@ func HashPassword(password string) (string, error) {
 func CheckPasswordHash(password, hash string) bool {
 	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
 	if err != nil {
-		log.Println(err)
+		log.Fatal(err)
 	}
 	return err == nil
 }
@@ -195,7 +195,6 @@ func decodeToken(tokenString string) string {
 	}
 
 	claims := token.Claims.(jwt.MapClaims)
-	log.Println(claims["username"], claims["organization_id"])
 
 	return claims["organization_id"].(string)
 }

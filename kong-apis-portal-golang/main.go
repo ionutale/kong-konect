@@ -26,7 +26,7 @@ func main() {
 	v1.Post("/users/:id/login", handlerUserLogin)          // /api/v1/user/:id/login
 	v1.Post("/users/:id/password", handlerUserSetPassword) // /api/v1/user/:id/set-password
 
-	err := app.Listen(":3000")
+	err := app.Listen(":3001")
 	if err != nil {
 		log.Fatal(err)
 	}

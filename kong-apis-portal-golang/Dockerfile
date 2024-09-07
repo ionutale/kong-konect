@@ -1,26 +1,33 @@
-FROM golang:1.22
+FROM golang:1.22.6-alpine as builder
 
-# Set destination for COPY
+# Set the Current Working Directory inside the container
 WORKDIR /app
 
-# Download Go modules
-COPY go.mod go.sum ./
+# Copy go mod and sum files
+COPY . .
+
+# Download all dependencies. Dependencies will be cached if the go.mod and go.sum files are not changed
 RUN go mod download
+RUN go vet -v
+RUN go test -v
 
-# Copy the source code. Note the slash at the end, as explained in
-# https://docs.docker.com/reference/dockerfile/#copy
-COPY *.go ./
-COPY ./.env ./
 
-# Build
-RUN CGO_ENABLED=0 GOOS=linux go build -o /docker-gs-ping
+COPY main.go .
 
-# Optional:
-# To bind to a TCP port, runtime parameters must be supplied to the docker command.
-# But we can document in the Dockerfile what ports
-# the application is going to listen on by default.
-# https://docs.docker.com/reference/dockerfile/#expose
-EXPOSE 3000
+# Build the Go app
+RUN CGO_ENABLED=0 go build -o main .
 
-# Run
-CMD ["/docker-gs-ping"]
+# Start a new stage from scratch
+FROM gcr.io/distroless/static-debian12:latest
+
+WORKDIR /app
+
+# Copy the Pre-built binary file from the previous stage
+COPY --from=builder /app/main .
+COPY --from=builder /app/.env .
+
+# Expose port 8080 to the outside world
+EXPOSE 3001
+
+# Command to run the executable
+CMD ["./main"]

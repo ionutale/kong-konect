@@ -8,8 +8,8 @@ import (
 	"strings"
 
 	"github.com/google/uuid"
-	_ "github.com/lib/pq"
 	"github.com/joho/godotenv"
+	_ "github.com/lib/pq"
 )
 
 type myUUID uuid.UUID
@@ -55,25 +55,31 @@ type Version struct {
 var db = dbConnect()
 
 func dbConnect() *sql.DB {
-  err := godotenv.Load()
-  if err != nil {
-    log.Fatal("Error loading .env file")
-  }
-
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatal("Error loading .env file")
+	}
 
 	var (
-    host     = os.Getenv("DB_HOST")
-    port     = os.Getenv("DB_PORT")
-    user     = os.Getenv("DB_USER")
-    password = os.Getenv("DB_PASSWORD")
-    dbname   = os.Getenv("DB_NAME")
-)
+		host     = os.Getenv("DB_HOST")
+		port     = os.Getenv("DB_PORT")
+		user     = os.Getenv("DB_USER")
+		password = os.Getenv("DB_PASSWORD")
+		dbname   = os.Getenv("DB_NAME")
+	)
 
-	connStr := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable", host, port, user, password, dbname)
+	fmt.Println(host, port, user, password, dbname)
+
+	// connStr := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable", host, port, user, password, dbname)
+	connStr := fmt.Sprintf("user=postgres.ckawhjpqxtzvmgcqppub password=*8QSacg#TRMbyxd host=aws-0-eu-central-1.pooler.supabase.com port=6543 dbname=postgres")
 	db, err := sql.Open("postgres", connStr)
 	if err != nil {
 		log.Println("Error connecting to the database: ", err)
 	}
+
+	db.SetMaxOpenConns(60)
+	db.SetMaxIdleConns(30)
+	db.SetConnMaxLifetime(0)
 
 	return db
 }
@@ -95,7 +101,6 @@ func fetchOrganizations() []Organization {
 		organizations = append(organizations, organization)
 	}
 
-	fmt.Println(organizations)
 	return organizations
 }
 
@@ -115,9 +120,30 @@ func fetchServices(organization_id string, page int, size int, search string, so
 		sort = sort + " ASC"
 	}
 
-	fmt.Println(sort)
-
-	totalRows, err := db.Query("SELECT count(*) from (SELECT s.id as id, s.organization_id as organization_id, s.name as name, s.description as description, s.created_at as created_at, s.updated_at as updated_at FROM services s, versions v WHERE s.organization_id = $1 AND s.id = v.service_id AND (s.name LIKE $2 OR s.description LIKE $2) GROUP BY v.service_id, s.name, s.description, s.created_at, s.updated_at, s.id) AS subquery",
+	totalRows, err := db.Query(`
+	SELECT 
+		count(*) from (
+			SELECT 
+			s.id as id, 
+			s.organization_id as organization_id, 
+			s.name as name, 
+			s.description as description, 
+			s.created_at as created_at,
+			s.updated_at as updated_at 
+		FROM 
+			services s, 
+			versions v 
+		WHERE 
+			s.organization_id = $1 
+			AND s.id = v.service_id 
+			AND (s.name LIKE $2 OR s.description LIKE $2) 
+		GROUP BY 
+			v.service_id, 
+			s.name, 
+			s.description, 
+			s.created_at, 
+			s.updated_at, s.id
+		) AS subquery`,
 		organization_id, search)
 	if err != nil {
 		log.Fatal(err)
