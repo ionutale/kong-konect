@@ -1,14 +1,16 @@
-FROM node:16.20.1-alpine
+FROM node:22-alpine
 
 WORKDIR /app
 
-COPY package.json package.json
-COPY package-lock.json package-lock.json
+RUN corepack enable && corepack prepare pnpm@latest --activate
 
-RUN npm i
+COPY package.json package.json
+COPY pnpm-lock.yaml pnpm-lock.yaml
+
+RUN pnpm install --frozen-lockfile
 
 COPY . .
 RUN rm -rf .env
 
-RUN npm run build
-CMD [ "npm", "run", "start:prod" ]
+RUN pnpm run build
+CMD [ "pnpm", "run", "start:prod" ]
